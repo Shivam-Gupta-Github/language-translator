@@ -1,36 +1,98 @@
+import { useState } from "react";
+import languages from "../languages";
 function Translator() {
+
+    const [fromText, setFromText] = useState('');
+    const [toText, setToText] = useState('');
+    const [fromLanguage, setFromLanguage] = useState('en-GB');
+    const [toLanguage, setToLanguage] = useState('hi-IN');
+
+    const handleExchange = () => {
+        let tempValue = fromText;
+        setFromText(toText);
+        setToText(tempValue);
+
+        let tempLang = fromLanguage;
+        setFromLanguage(toLanguage);
+        setToLanguage(tempLang);
+    }
+
+    const copyContent = (text) => {
+        navigator.clipboard.writeText(text);
+    }
+
+    const utterText = (text, language) => {
+        const synth = window.speechSynthesis;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = language;
+        synth.speak(utterance);
+    }
+
+    const handleIconClick = (target, id) => {
+        if (target.classList.contains('fa-copy')) {
+            if (id == 'from') {
+                copyContent(fromText);
+            }
+            else {
+                copyContent(toText);
+            }
+        }
+        else {
+            if (id == 'from') {
+                utterText(fromText, fromLanguage);
+            }
+            else {
+                utterText(toText, toLanguage);
+            }
+        }
+    }
+
+    const handleTranslate = () => {
+        let url = `https://api.mymemory.translated.net/get?q=${fromText}&langpair=${fromLanguage}|${toLanguage}`;
+        fetch(url).then((res) => res.json()).then((data) => {
+            setToText(data.responseData.translatedText);
+        });
+    }
+
     return (<>
         <div className="wrapper">
             <div className="text-input">
-                <textarea className="from-text" name="from" id="from"></textarea>
-                <textarea className="to-text" name="to" id="to"></textarea>
+                <textarea className="from-text" name="from" id="from" placeholder="Enter text." value={fromText} onChange={(event) => setFromText(event.target.value)}></textarea>
+                <textarea className="to-text" name="to" id="to" value={toText} readOnly></textarea>
             </div>
-            <div className="controls">
-                <div className="row from">
+            <ul className="controls">
+                <li className="row from">
                     <div className="icons">
-                        <i class="fa-solid fa-volume-high"></i>
-                        <i class="fa-solid fa-copy"></i>
+                        <i id="from" className="fa-solid fa-volume-high" onClick={(event) => handleIconClick(event.target, 'from')}></i>
+                        <i id="from" className="fa-solid fa-copy" onClick={(event) => handleIconClick(event.target, 'from')}></i>
                     </div>
-                    <select name="" id="">
-                        <option value="English"></option>
+                    <select value={fromLanguage} onChange={(event) => setFromLanguage(event.target.value)}>
+                        {
+                            Object.entries(languages).map(([code, name]) => (
+                                <option key={code} value={code}>{name}</option>
+                            ))
+                        }
                     </select>
-                </div>
-                <div className="exchange">
-                    <i class="fa-solid fa-right-left"></i>
-                </div>
-                <div className="row to">
-                    <select name="" id="">
-                        <option value="Hindi"></option>
+                </li>
+                <li className="exchange" onClick={handleExchange}>
+                    <i className="fa-solid fa-right-left"></i>
+                </li>
+                <li className="row to">
+                    <select value={toLanguage} onChange={(event) => setToLanguage(event.target.value)}>
+                        {
+                            Object.entries(languages).map(([code, name]) => (
+                                <option key={code} value={code}>{name}</option>
+                            ))
+                        }
                     </select>
                     <div className="icons">
-                        <i class="fa-solid fa-copy"></i>
-                        <i class="fa-solid fa-volume-high"></i>
+                        <i id="to" className="fa-solid fa-copy" onClick={(event) => handleIconClick(event.target, 'to')}></i>
+                        <i id="to" className="fa-solid fa-volume-high" onClick={(event) => handleIconClick(event.target, 'to')}></i>
                     </div>
-
-                </div>
-            </div>
+                </li>
+            </ul >
         </div>
-        <button>Translate</button>
+        <button onClick={handleTranslate}>Translate</button>
     </>);
 }
 export default Translator;
